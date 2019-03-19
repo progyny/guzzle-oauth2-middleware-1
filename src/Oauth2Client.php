@@ -197,39 +197,26 @@ class Oauth2Client extends Client
 
     public function getToken(GrantTypeBase $grantType)
     {
-        $token_client_config = [];
+       $url = 'https://login.salesforce.com/services/oauth2/token';  
 
-        if (isset($this->config['token_handler'])) {
-            $token_client_config['handler'] = $this->config['token_handler'];
-        }
+       $requestStuff = array(
+            "grant_type" => "password",
+            "client_id" => env('SALESFORCE_OAUTH_CONSUMER_TOKEN'),
+            "client_secret" => env('SALESFORCE_OAUTH_CONSUMER_SECRET'),
+            "username" => env('SALESFORCE_OAUTH_USER'),
+            "password" => env('SALESFORCE_OAUTH_PASSWORD')
+        );
 
-        $client = new Client($token_client_config);
-        $config = $grantType->getConfig();
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $requestStuff);
+        curl_setopt($ch,CURLOPT_RETURNTRANSFER, true);
+        $response = curl_exec($ch);
+        curl_close($ch);
 
-        $form_params = $config;
-        $form_params['grant_type'] = $grantType->grantType;
-        unset($form_params['token_url'], $form_params['auth_location'], $form_params['body_type'], $form_params['base_uri'], $form_params['jwt_private_key'], $form_params['jwt_private_key_passphrase'], $form_params['jwt_payload'], $form_params['jwt_algorithm']);
+        $data = json_decode($response, true);
 
-        $requestOptions = [];
-
-        if ($config['auth_location'] !== 'body') {
-            $requestOptions['auth'] = [$config['client_id'], $config['client_secret']];
-            unset($form_params['client_id'], $form_params['client_secret']);
-        }
-
-        if ($config['body_type'] == 'json') {
-            $requestOptions['json'] = $form_params;
-        } else {
-            $requestOptions['form_params'] = $form_params;
-        }
-
-        if ($additionalOptions = $grantType->getAdditionalOptions()) {
-            $requestOptions = array_merge_recursive($requestOptions, $additionalOptions);
-        }
-        $requestOptions['http_errors'] = false;
-
-        $response = $client->post($config['token_url'], $requestOptions);
-        /** @var Psr7\Response $data */
         $data = json_decode((string) $response->getBody(), true);
 
         if (isset($data['access_token'])) {
