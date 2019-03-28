@@ -197,28 +197,26 @@ class Oauth2Client extends Client
 
     public function getToken(GrantTypeBase $grantType)
     {
-       $url = 'https://login.salesforce.com/services/oauth2/token';  
+        $url = 'https://login.salesforce.com/services/oauth2/token';  
 
-       $requestStuff = array(
-            "grant_type" => "password",
-            "client_id" => env('SALESFORCE_OAUTH_CONSUMER_TOKEN'),
-            "client_secret" => env('SALESFORCE_OAUTH_CONSUMER_SECRET'),
-            "username" => env('SALESFORCE_OAUTH_USER'),
-            "password" => env('SALESFORCE_OAUTH_PASSWORD')
-        );
+        $requestStuff = array(
+            "grant_type" => "password",
+            "client_id" => env("SALESFORCE_OAUTH_CONSUMER_TOKEN"),
+            "client_secret" => env("SALESFORCE_OAUTH_CONSUMER_SECRET"),
+            "username" => env("SALESFORCE_OAUTH_USER"),
+            "password" => env("SALESFORCE_OAUTH_PASSWORD")
+        );
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $requestStuff);
-        curl_setopt($ch,CURLOPT_RETURNTRANSFER, true);
-        $response = curl_exec($ch);
-        curl_close($ch);
-
-        $data = json_decode($response, true);
-
-        $data = json_decode((string) $response->getBody(), true);
-
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $requestStuff);
+        curl_setopt($ch,CURLOPT_RETURNTRANSFER, true);
+        $response = curl_exec($ch);
+        curl_close($ch);
+        // $response = $client->post($url, $requestStuff);
+        // * @var Psr7\Response $data 
+        $data = json_decode($response, true);
         if (isset($data['access_token'])) {
             return new AccessToken($data['access_token'], isset($data['token_type']) ? $data['token_type'] : '', $data);
         } elseif (isset($data['error'])) {
